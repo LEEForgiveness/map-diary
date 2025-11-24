@@ -1,6 +1,6 @@
 "use client";
 import Script from "next/script";
-import React, { useRef } from "react";
+import React from "react";
 import {
   CustomOverlayMap,
   Map,
@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import AddOverlay from "./AddOverlay";
 import { useEffect } from "react";
+import { useRouter } from "next/navigation";
 
 const testMaker = [
   {
@@ -73,7 +74,7 @@ export default function KakaoMap() {
   const [showOverlayForm, setShowOverlayForm] = useState(false);
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isKakaoLoaded, setIsKakaoLoaded] = useState(false);
-
+  const router = useRouter();
   const handleSearch = () => {
     if (!isKakaoLoaded) {
       alert("지도를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
@@ -127,53 +128,65 @@ export default function KakaoMap() {
             <AddOverlay onClose={() => setShowOverlayForm(false)} />
           </CustomOverlayMap>
         )}
-        <div className="absolute top-4 left-4 flex flex-col gap-2 z-10">
-          <button
-            onClick={() => {
-              setOnRoadview(!onRoadview);
-            }}
-            className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
-          >
-            {onRoadview ? "지도 모드" : "로드뷰 모드"}
-          </button>
-          <button
-            onClick={() => {
-              if (navigator.geolocation) {
-                navigator.geolocation.getCurrentPosition(
-                  (position) => {
-                    setCenter({
-                      lat: position.coords.latitude,
-                      lng: position.coords.longitude,
-                    });
-                  },
-                  (err) => {
-                    console.error("위치 가져오기 실패:", err.message);
-                  }
-                );
-              }
-            }}
-            className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
-          >
-            📍 내 위치
-          </button>
+        <div className="absolute top-4 flex z-10 items-end gap-4 w-full px-4">
           <div className="flex gap-2">
-            <input
-              type="text"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              onKeyPress={(e) => {
-                if (e.key === "Enter") {
-                  handleSearch();
-                }
-              }}
-              placeholder="장소 검색"
-              className="bg-white text-gray-800 py-2 px-4 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
             <button
-              onClick={handleSearch}
+              onClick={() => {
+                setOnRoadview(!onRoadview);
+              }}
               className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
             >
-              🔍
+              {onRoadview ? "지도 모드" : "로드뷰 모드"}
+            </button>
+            <button
+              onClick={() => {
+                if (navigator.geolocation) {
+                  navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                      setCenter({
+                        lat: position.coords.latitude,
+                        lng: position.coords.longitude,
+                      });
+                    },
+                    (err) => {
+                      console.error("위치 가져오기 실패:", err.message);
+                    }
+                  );
+                }
+              }}
+              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
+            >
+              📍 내 위치
+            </button>
+            <div className="flex gap-2">
+              <input
+                type="text"
+                value={searchKeyword}
+                onChange={(e) => setSearchKeyword(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === "Enter") {
+                    handleSearch();
+                  }
+                }}
+                placeholder="장소 검색"
+                className="bg-white text-gray-800 py-2 px-4 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+              <button
+                onClick={handleSearch}
+                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
+              >
+                🔍
+              </button>
+            </div>
+          </div>
+          <div className="flex ml-auto">
+            <button
+              onClick={() => {
+                router.push("/login");
+              }}
+              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
+            >
+              로그인
             </button>
           </div>
         </div>

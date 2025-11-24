@@ -1,4 +1,5 @@
 import KakaoMap from "./component/KakaoMap";
+import MainHeader from "./component/layouts/MainHeader";
 
 declare global {
   interface Window {
