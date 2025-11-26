@@ -4,6 +4,12 @@ import { AddPhotoType } from "../types/photoType";
 import { create } from "domain";
 
 export async function AddPhoto(session: Session, file: File, AddPhoto: AddPhotoType) {
+    const checked = await supabase.from('photo').select('latitude, longitude').eq('latitude', AddPhoto.lat).eq('longitude', AddPhoto.lng);
+    console.log(checked);
+    if (checked) {
+        console.log('중복된 위치에 사진을 추가할 수 없습니다.');
+        return null;
+    }
     try {
         const { data: storageData, error: uploadError } = await supabase.storage.from(`${process.env.NEXT_PUBLIC_SUPABASE_BUCKET}`).upload('photos/' + file.name, file, {
   upsert: true,

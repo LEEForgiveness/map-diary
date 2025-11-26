@@ -14,33 +14,7 @@ import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import supabase from "../utils/supabaseConfig";
 import { GetPhotos } from "../api/photo";
-import PhotoPin from "./PhotoPin";
 import RectPhotoPin from "./RectPhotoPin";
-
-const testMaker = [
-  {
-    lat: 33.5563,
-    lng: 126.79581,
-    image: {
-      src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3saeTNuIeCcWOd9LXmLB694kbY1f-9chJgA&s",
-      size: { width: 25, height: 40 },
-      options: {
-        offset: { x: 12, y: 40 }, // 이미지 하단 중앙을 기준점으로
-      },
-    },
-  },
-  {
-    lat: 33.55637325032181,
-    lng: 126.79572990383876,
-    image: {
-      src: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQ3saeTNuIeCcWOd9LXmLB694kbY1f-9chJgA&s",
-      size: { width: 25, height: 40 },
-      options: {
-        offset: { x: 12, y: 40 }, // 이미지 하단 중앙을 기준점으로
-      },
-    },
-  },
-];
 
 export default function KakaoMap() {
   const [center, setCenter] = useState({
@@ -178,13 +152,13 @@ export default function KakaoMap() {
             />
           </CustomOverlayMap>
         )}
-        <div className="absolute top-4 flex z-10 items-end gap-4 w-full px-4">
-          <div className="flex gap-2">
+        <div className="absolute top-4 z-10 w-full px-4 flex flex-wrap gap-3 items-start md:items-end">
+          <div className="flex flex-wrap gap-2 items-center">
             <button
               onClick={() => {
                 setOnRoadview(!onRoadview);
               }}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
+              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
             >
               {onRoadview ? "지도 모드" : "로드뷰 모드"}
             </button>
@@ -193,10 +167,12 @@ export default function KakaoMap() {
                 if (navigator.geolocation) {
                   navigator.geolocation.getCurrentPosition(
                     (position) => {
-                      setCenter({
+                      const currentPosition = {
                         lat: position.coords.latitude,
                         lng: position.coords.longitude,
-                      });
+                      };
+                      setCenter(currentPosition);
+                      setOverlayPosition(currentPosition);
                     },
                     (err) => {
                       console.error("위치 가져오기 실패:", err.message);
@@ -204,11 +180,11 @@ export default function KakaoMap() {
                   );
                 }
               }}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
+              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
             >
               📍 내 위치
             </button>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2 items-center">
               <input
                 type="text"
                 value={searchKeyword}
@@ -219,20 +195,20 @@ export default function KakaoMap() {
                   }
                 }}
                 placeholder="장소 검색"
-                className="bg-white text-gray-800 py-2 px-4 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="bg-white text-gray-800 py-2 px-4 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-[160px] md:w-64"
               />
               <button
                 onClick={handleSearch}
-                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
+                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
               >
                 🔍
               </button>
             </div>
           </div>
-          <div className="flex ml-auto">
+          <div className="flex md:ml-auto flex-shrink-0">
             <button
               onClick={handleAuthClick}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
+              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
             >
               {isLoggedIn ? "로그아웃" : "로그인"}
             </button>
@@ -272,7 +248,7 @@ export default function KakaoMap() {
               `${photo.latitude}-${photo.longitude}-${photo.photo_url}`
             }
             position={{ lat: photo.latitude, lng: photo.longitude }}
-            yAnchor={1} // 마커 아랫부분이 좌표에 찍히도록
+            yAnchor={0.7} // 마커 아랫부분이 좌표에 찍히도록
             clickable
           >
             <RectPhotoPin
