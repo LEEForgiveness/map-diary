@@ -12,6 +12,10 @@ import { useState } from "react";
 import AddOverlay from "./AddOverlay";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
+import supabase from "../utils/supabaseConfig";
+import { GetPhotos } from "../api/photo";
+import PhotoPin from "./PhotoPin";
+import RectPhotoPin from "./RectPhotoPin";
 
 const testMaker = [
   {
@@ -40,13 +44,36 @@ const testMaker = [
 
 export default function KakaoMap() {
   const [center, setCenter] = useState({
-    lat: 33.450422139819736,
-    lng: 126.5709139924533,
+    lat: 33.55619546148889,
+    lng: 126.79589723542207,
   });
   const [overlayPosition, setOverlayPosition] = useState<{
     lat: number;
     lng: number;
   } | null>(null);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [photos, setPhotos] = useState<any[]>([]);
+
+  useEffect(() => {
+    // 세션 확인
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      setIsLoggedIn(!!session);
+    };
+
+    checkSession();
+
+    // 세션 변경 감지
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((_event, session) => {
+      setIsLoggedIn(!!session);
+    });
+
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -69,6 +96,12 @@ export default function KakaoMap() {
     }
   }, []);
 
+  useEffect(() => {
+    GetPhotos().then((photos) => {
+      setPhotos(photos || []);
+    });
+  }, []);
+
   const [onRoadview, setOnRoadview] = useState(false);
   const [isError, setIsError] = useState(false);
   const [showOverlayForm, setShowOverlayForm] = useState(false);
@@ -83,6 +116,17 @@ export default function KakaoMap() {
     if (!searchKeyword.trim()) {
       alert("검색어를 입력해주세요");
       return;
+    }
+  };
+
+  const handleAuthClick = async () => {
+    if (isLoggedIn) {
+      // 로그아웃
+      await supabase.auth.signOut();
+      setIsLoggedIn(false);
+    } else {
+      // 로그인 페이지로 이동
+      router.push("/login");
     }
   };
 
@@ -125,7 +169,13 @@ export default function KakaoMap() {
             yAnchor={1.5}
             clickable={true}
           >
-            <AddOverlay onClose={() => setShowOverlayForm(false)} />
+            <AddOverlay
+              onClose={() => {
+                setShowOverlayForm(false);
+                setOverlayPosition(null);
+              }}
+              position={overlayPosition}
+            />
           </CustomOverlayMap>
         )}
         <div className="absolute top-4 flex z-10 items-end gap-4 w-full px-4">
@@ -181,12 +231,10 @@ export default function KakaoMap() {
           </div>
           <div className="flex ml-auto">
             <button
-              onClick={() => {
-                router.push("/login");
-              }}
+              onClick={handleAuthClick}
               className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg"
             >
-              로그인
+              {isLoggedIn ? "로그아웃" : "로그인"}
             </button>
           </div>
         </div>
@@ -217,14 +265,23 @@ export default function KakaoMap() {
             />
           </>
         )}
-        {testMaker.map((marker) => (
-          <MapMarker
-            key={`${marker.lat}-${marker.lng}`}
-            position={{ lat: marker.lat, lng: marker.lng }}
-            clickable={true}
-            onClick={() => alert("마커 클릭됨")}
-            image={marker.image}
-          />
+        {photos.map((photo) => (
+          <CustomOverlayMap
+            key={
+              photo.id ||
+              `${photo.latitude}-${photo.longitude}-${photo.photo_url}`
+            }
+            position={{ lat: photo.latitude, lng: photo.longitude }}
+            yAnchor={1} // 마커 아랫부분이 좌표에 찍히도록
+            clickable
+          >
+            <RectPhotoPin
+              src={photo.photo_url}
+              onClick={() => window.open(photo.photo_url, "_blank")}
+              width={46} // 취향껏 40~56 추천
+              height={46} // 취향껏 30~42 추천
+            />
+          </CustomOverlayMap>
         ))}
       </Map>
       {onRoadview && (

@@ -1,15 +1,17 @@
 "use client";
 
+import { registerUser } from "@/app/api/auth";
 import HeaderIcon from "@/app/images/HeaderIcon";
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function page() {
+  const router = useRouter();
   const [formData, setFormData] = useState({
     name: "",
     email: "",
     password: "",
     confirmPassword: "",
-    agreed: false,
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -22,8 +24,13 @@ export default function page() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    // TODO: 회원가입 로직 구현
+    if (formData.password !== formData.confirmPassword) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+    registerUser(formData);
     console.log("formData:", formData);
+    router.push("/login");
   };
 
   return (
@@ -73,6 +80,7 @@ export default function page() {
               </p>
               <input
                 placeholder="비밀번호를 입력하세요"
+                type="password"
                 className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border border-[#dce0e5] bg-white focus:border-[#dce0e5] h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal"
                 value={formData.password}
                 onChange={handleChange}
@@ -87,6 +95,7 @@ export default function page() {
               </p>
               <input
                 placeholder="비밀번호를 입력하세요"
+                type="password"
                 className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border border-[#dce0e5] bg-white focus:border-[#dce0e5] h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal"
                 value={formData.confirmPassword}
                 onChange={handleChange}
@@ -95,15 +104,6 @@ export default function page() {
             </label>
           </div>
           <div className="flex flex-col items-start w-[480px] px-4 py-3">
-            {/* <label className="flex gap-x-3 py-3 flex-row">
-              <input
-                type="checkbox"
-                className="h-5 w-5 rounded border-[#dce0e5] border-2 bg-transparent text-[#1980e6] checked:bg-[#1980e6] checked:border-[#1980e6] checked:bg-[image:--checkbox-tick-svg] focus:ring-0 focus:ring-offset-0 focus:border-[#dce0e5] focus:outline-none"
-              />
-              <p className="text-[#111418] text-base font-normal leading-normal">
-                동의
-              </p>
-            </label> */}
             <div className="flex flex-1 gap-3 flex-wrap py-3 justify-start">
               <button
                 onClick={handleSubmit}

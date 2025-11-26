@@ -7,6 +7,8 @@ import HeaderIcon from "@/app/images/HeaderIcon";
 import GoogleLogo from "@/app/images/GoogleLogo";
 import KakaoLogo from "@/app/images/KakaoLogo";
 import { LoginFormType } from "@/app/types/formType";
+import supabase from "@/app/utils/supabaseConfig";
+import { loginUser } from "@/app/api/auth";
 
 export default function LoginForm() {
   const param = useSearchParams();
@@ -19,20 +21,25 @@ export default function LoginForm() {
     password: "",
   });
 
-  const logInSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  const logInSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!payload.username && !payload.password) {
       return alert("아이디와 비밀번호를 입력해주세요.");
     }
-    console.log("payload:", payload);
-    const res = fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/member/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(payload),
-    });
-    // console.log("res:", res)
+    const { data, error } = await loginUser(payload.username, payload.password);
+    if (error) {
+      return alert("로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.");
+    } else {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      console.log("session after login:", session);
+      if (callbackUrl) {
+        window.location.href = callbackUrl;
+      } else {
+        window.location.href = "/";
+      }
+    }
   };
 
   const onChangePayload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,7 +58,9 @@ export default function LoginForm() {
                 <HeaderIcon />
               </div>
               <h1 className="text-[#111418] text-3xl font-bold leading-tight tracking-[-0.015em]">
-                Map-Diary
+                <Link href={"/"} className="hover:underline">
+                  Map-Diary
+                </Link>
               </h1>
             </div>
             <div className="flex max-w-lg flex-wrap items-end gap-4 px-4 py-3">
