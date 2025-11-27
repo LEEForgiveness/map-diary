@@ -1,6 +1,6 @@
 "use client";
 import Script from "next/script";
-import React from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import {
   CustomOverlayMap,
   Map,
@@ -8,9 +8,7 @@ import {
   MapTypeId,
   Roadview,
 } from "react-kakao-maps-sdk";
-import { useState } from "react";
 import AddOverlay from "./AddOverlay";
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import supabase from "../utils/supabaseConfig";
 import { GetPhotos } from "../api/photo";
@@ -27,6 +25,15 @@ export default function KakaoMap() {
   } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [photos, setPhotos] = useState<any[]>([]);
+  const [map, setMap] = useState<kakao.maps.Map | null>(null);
+  const [searchMarkers, setSearchMarkers] = useState<
+    {
+      id: string;
+      position: { lat: number; lng: number };
+      content: string;
+    }[]
+  >([]);
+  const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
 
   useEffect(() => {
     // 세션 확인
@@ -82,8 +89,8 @@ export default function KakaoMap() {
   const [searchKeyword, setSearchKeyword] = useState("");
   const [isKakaoLoaded, setIsKakaoLoaded] = useState(false);
   const router = useRouter();
-  const handleSearch = () => {
-    if (!isKakaoLoaded) {
+  const handleSearch = useCallback(() => {
+    if (!isKakaoLoaded || !map) {
       alert("지도를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
@@ -91,7 +98,37 @@ export default function KakaoMap() {
       alert("검색어를 입력해주세요");
       return;
     }
-  };
+    if (!window.kakao?.maps?.services) {
+      alert("검색 서비스를 사용할 수 없습니다.");
+      return;
+    }
+
+    const places = new kakao.maps.services.Places();
+    places.keywordSearch(searchKeyword, (data, status) => {
+      if (status !== kakao.maps.services.Status.OK) {
+        alert("검색 결과가 없습니다.");
+        setSearchMarkers([]);
+        setSelectedPlace(null);
+        return;
+      }
+
+      const bounds = new kakao.maps.LatLngBounds();
+      const markers = data.map((place) => {
+        const lat = Number(place.y);
+        const lng = Number(place.x);
+        bounds.extend(new kakao.maps.LatLng(lat, lng));
+        return {
+          id: place.id || `${place.place_name}-${lat}-${lng}`,
+          position: { lat, lng },
+          content: place.place_name,
+        };
+      });
+
+      setSearchMarkers(markers);
+      setSelectedPlace(null);
+      map.setBounds(bounds);
+    });
+  }, [isKakaoLoaded, map, searchKeyword]);
 
   const handleAuthClick = async () => {
     if (isLoggedIn) {
@@ -107,13 +144,17 @@ export default function KakaoMap() {
   return (
     <div className="relative">
       <Script
-        src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false`}
+        src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
         strategy="beforeInteractive"
       ></Script>
       <Map
         center={center}
         level={3}
         style={{ width: "100vw", height: "100vh" }}
+        onCreate={(mapInstance) => {
+          setMap(mapInstance);
+          setIsKakaoLoaded(true);
+        }}
         onClick={(_, mouseEvent) => {
           const latlng = mouseEvent.latLng;
           const clickedPosition = {
@@ -137,6 +178,22 @@ export default function KakaoMap() {
             onClick={() => setShowOverlayForm(!showOverlayForm)}
           />
         )}
+        {searchMarkers.map((marker) => (
+          <MapMarker
+            key={`search-${marker.id}`}
+            position={marker.position}
+            onClick={() => setSelectedPlace(marker.id)}
+            clickable={true}
+            onMouseOver={() => setSelectedPlace(marker.id)}
+            onMouseOut={() => setSelectedPlace(null)}
+          >
+            {selectedPlace === marker.id && (
+              <div className="bg-white text-black px-2 py-1 rounded shadow">
+                {marker.content}
+              </div>
+            )}
+          </MapMarker>
+        ))}
         {showOverlayForm && overlayPosition && (
           <CustomOverlayMap
             position={overlayPosition}
@@ -158,9 +215,27 @@ export default function KakaoMap() {
               onClick={() => {
                 setOnRoadview(!onRoadview);
               }}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
+              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg flex items-center justify-center gap-1"
+              aria-label={onRoadview ? "지도 모드" : "로드뷰 모드"}
             >
-              {onRoadview ? "지도 모드" : "로드뷰 모드"}
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="w-5 h-5 text-gray-700"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                <path d="M3 15h18" />
+                <path d="M5 15l1.5-4.5A2 2 0 0 1 8.4 9h7.2a2 2 0 0 1 1.9 1.5L19 15" />
+                <circle cx="7" cy="18" r="1.5" />
+                <circle cx="17" cy="18" r="1.5" />
+              </svg>
+              <span className="hidden md:inline">
+                {onRoadview ? "지도 모드" : "로드뷰 모드"}
+              </span>
             </button>
             <button
               onClick={() => {
@@ -172,7 +247,6 @@ export default function KakaoMap() {
                         lng: position.coords.longitude,
                       };
                       setCenter(currentPosition);
-                      setOverlayPosition(currentPosition);
                     },
                     (err) => {
                       console.error("위치 가져오기 실패:", err.message);
@@ -180,29 +254,36 @@ export default function KakaoMap() {
                   );
                 }
               }}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
+              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg flex items-center justify-center gap-1"
+              aria-label="내 위치"
             >
-              📍 내 위치
+              <span aria-hidden="true" className="text-lg">
+                📍
+              </span>
+              <span className="hidden md:inline">내 위치</span>
             </button>
             <div className="flex flex-wrap gap-2 items-center">
-              <input
-                type="text"
-                value={searchKeyword}
-                onChange={(e) => setSearchKeyword(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch();
-                  }
-                }}
-                placeholder="장소 검색"
-                className="bg-white text-gray-800 py-2 px-4 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-[160px] md:w-64"
-              />
-              <button
-                onClick={handleSearch}
-                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
-              >
-                🔍
-              </button>
+              <div className="relative flex-1 min-w-[200px] md:w-64">
+                <input
+                  type="text"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === "Enter") {
+                      handleSearch();
+                    }
+                  }}
+                  placeholder="장소 검색"
+                  className="bg-white text-gray-800 py-2 pl-4 pr-12 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                />
+                <button
+                  onClick={handleSearch}
+                  className="absolute inset-y-1 right-1 px-3 rounded-md text-gray-700 hover:text-gray-900 flex items-center justify-center"
+                  aria-label="검색"
+                >
+                  🔍
+                </button>
+              </div>
             </div>
           </div>
           <div className="flex md:ml-auto flex-shrink-0">
