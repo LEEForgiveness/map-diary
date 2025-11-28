@@ -1,7 +1,7 @@
 export interface AddPhotoType {
     description?: string;
-    lat: number;
-    lng: number;
+    lat: string;
+    lng: string;
     date?: string;
     shared: boolean;
     }

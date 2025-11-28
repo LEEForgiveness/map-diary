@@ -48,7 +48,10 @@ export default function AddOverlay({
             setShowPhotoOverlay(false);
             onClose?.();
           }}
-          position={position}
+          position={{
+            lat: position.lat.toString(),
+            lng: position.lng.toString(),
+          }}
         />
       </div>,
       document.body

@@ -5,7 +5,7 @@ import supabase from "../utils/supabaseConfig";
 
 interface PhotoOverlayProps {
   onClose: () => void;
-  position: { lat: number; lng: number };
+  position: { lat: string; lng: string };
 }
 
 export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
@@ -145,7 +145,7 @@ export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
 
         <div className="text-xs text-gray-500 space-y-2">
           <p>
-            위치: {position.lat.toFixed(6)}, {position.lng.toFixed(6)}
+            위치: {parseFloat(position.lat)}, {parseFloat(position.lng)}
           </p>
           <div className="flex items-center">
             <input

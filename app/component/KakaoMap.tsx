@@ -24,6 +24,7 @@ export default function KakaoMap() {
     lng: number;
   } | null>(null);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userId, setUserId] = useState<string | null>(null);
   const [photos, setPhotos] = useState<any[]>([]);
   const [map, setMap] = useState<kakao.maps.Map | null>(null);
   const [searchMarkers, setSearchMarkers] = useState<
@@ -42,6 +43,7 @@ export default function KakaoMap() {
         data: { session },
       } = await supabase.auth.getSession();
       setIsLoggedIn(!!session);
+      setUserId(session?.user?.id ?? null);
     };
 
     checkSession();
@@ -51,6 +53,7 @@ export default function KakaoMap() {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setIsLoggedIn(!!session);
+      setUserId(session?.user?.id ?? null);
     });
 
     return () => subscription.unsubscribe();
@@ -179,20 +182,25 @@ export default function KakaoMap() {
           />
         )}
         {searchMarkers.map((marker) => (
-          <MapMarker
-            key={`search-${marker.id}`}
-            position={marker.position}
-            onClick={() => setSelectedPlace(marker.id)}
-            clickable={true}
-            onMouseOver={() => setSelectedPlace(marker.id)}
-            onMouseOut={() => setSelectedPlace(null)}
-          >
+          <React.Fragment key={`search-${marker.id}`}>
+            <MapMarker
+              position={marker.position}
+              onClick={() => {
+                setShowOverlayForm(true);
+                setOverlayPosition(marker.position);
+              }}
+              clickable={true}
+              onMouseOver={() => setSelectedPlace(marker.id)}
+              onMouseOut={() => setSelectedPlace(null)}
+            />
             {selectedPlace === marker.id && (
-              <div className="bg-white text-black px-2 py-1 rounded shadow">
-                {marker.content}
-              </div>
+              <CustomOverlayMap position={marker.position} yAnchor={2}>
+                <div className="bg-white text-gray-800 px-3 py-2 rounded-xl shadow-lg border border-gray-200 text-sm font-semibold whitespace-nowrap">
+                  {marker.content}
+                </div>
+              </CustomOverlayMap>
             )}
-          </MapMarker>
+          </React.Fragment>
         ))}
         {showOverlayForm && overlayPosition && (
           <CustomOverlayMap
@@ -286,7 +294,7 @@ export default function KakaoMap() {
               </div>
             </div>
           </div>
-          <div className="flex md:ml-auto flex-shrink-0">
+          <div className="flex md:ml-auto shrink-0">
             <button
               onClick={handleAuthClick}
               className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
@@ -322,24 +330,32 @@ export default function KakaoMap() {
             />
           </>
         )}
-        {photos.map((photo) => (
-          <CustomOverlayMap
-            key={
-              photo.id ||
-              `${photo.latitude}-${photo.longitude}-${photo.photo_url}`
-            }
-            position={{ lat: photo.latitude, lng: photo.longitude }}
-            yAnchor={0.7} // 마커 아랫부분이 좌표에 찍히도록
-            clickable
-          >
-            <RectPhotoPin
-              src={photo.photo_url}
-              onClick={() => window.open(photo.photo_url, "_blank")}
-              width={46} // 취향껏 40~56 추천
-              height={46} // 취향껏 30~42 추천
-            />
-          </CustomOverlayMap>
-        ))}
+        {photos.map((photo) => {
+          const canOpen = userId && photo.uuid === userId;
+          return (
+            <CustomOverlayMap
+              key={
+                photo.id ||
+                `${photo.latitude}-${photo.longitude}-${photo.photo_url}`
+              }
+              position={{ lat: photo.latitude, lng: photo.longitude }}
+              yAnchor={0.7}
+              clickable={!!canOpen}
+            >
+              <RectPhotoPin
+                src={photo.photo_url}
+                onClick={
+                  canOpen
+                    ? () => window.open(photo.photo_url, "_blank")
+                    : undefined
+                }
+                width={46}
+                height={46}
+                disabled={!canOpen}
+              />
+            </CustomOverlayMap>
+          );
+        })}
       </Map>
       {onRoadview && (
         <Roadview

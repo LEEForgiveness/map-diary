@@ -9,6 +9,7 @@ type Props = {
   radius?: number; // 모서리 둥글기(px)
   onClick?: () => void;
   isSelected?: boolean;
+  disabled?: boolean;
 };
 
 export default function RectPhotoPin({
@@ -18,11 +19,16 @@ export default function RectPhotoPin({
   radius = 12,
   onClick,
   isSelected = false,
+  disabled = false,
 }: Props) {
   return (
     <button
       onClick={onClick}
-      className="group relative -translate-y-1/2"
+      disabled={disabled}
+      type="button"
+      className={`group relative -translate-y-1/2 ${
+        disabled ? "cursor-not-allowed" : ""
+      }`}
       style={{ width, height }}
       aria-label="photo marker rectangular"
     >
@@ -54,7 +60,7 @@ export default function RectPhotoPin({
         />
 
         {/* 살짝 유리광 느낌(선택) */}
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/20 to-transparent" />
+        <div className="pointer-events-none absolute inset-0 bg-linear-to-b from-white/20 to-transparent" />
       </div>
 
       {/* 핀 꼬리 (삼각형/마름모) */}

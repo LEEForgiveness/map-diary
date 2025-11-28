@@ -11,12 +11,14 @@ export async function registerUser(signupData: { email: string; password: string
             }
         }
     });
+    console.log(data);
+    console.log(error);
 
     if (error) {
-        throw new Error(error.message);
+        console.error('Error registering user:', error);
     }
 
-    return data;
+    return { data, error };
 }
 
 export async function loginUser(email: string, password: string) {

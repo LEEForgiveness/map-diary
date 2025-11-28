@@ -11,6 +11,18 @@ import supabase from "@/app/utils/supabaseConfig";
 import { loginUser } from "@/app/api/auth";
 
 export default function LoginForm() {
+  useEffect(() => {
+    // 세션 확인
+    const checkSession = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (session) {
+        window.location.href = "/";
+      }
+    };
+    checkSession();
+  }, []);
   const param = useSearchParams();
   // console.log(param.get('callbackUrl'))
   const callbackUrl = param.get("callbackUrl");
