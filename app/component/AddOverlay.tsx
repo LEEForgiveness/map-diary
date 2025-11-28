@@ -4,13 +4,16 @@ import { createPortal } from "react-dom";
 import PhotoOverlay from "./PhotoAddOverlay";
 import supabase from "../utils/supabaseConfig";
 import { useRouter } from "next/navigation";
+import PhotoAddOverlay from "./PhotoAddOverlay";
 
 export default function AddOverlay({
   onClose,
   position,
+  onPhotoAdded,
 }: {
   onClose?: () => void;
   position: { lat: number; lng: number };
+  onPhotoAdded?: () => void | Promise<void>;
 }) {
   const [showPhotoOverlay, setShowPhotoOverlay] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
@@ -43,7 +46,7 @@ export default function AddOverlay({
           onClose?.();
         }}
       >
-        <PhotoOverlay
+        <PhotoAddOverlay
           onClose={() => {
             setShowPhotoOverlay(false);
             onClose?.();
@@ -52,6 +55,7 @@ export default function AddOverlay({
             lat: position.lat.toString(),
             lng: position.lng.toString(),
           }}
+          onPhotoAdded={onPhotoAdded}
         />
       </div>,
       document.body

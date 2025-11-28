@@ -1,6 +1,7 @@
 "use client";
 import Script from "next/script";
 import React, { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import {
   CustomOverlayMap,
   Map,
@@ -13,6 +14,7 @@ import { useRouter } from "next/navigation";
 import supabase from "../utils/supabaseConfig";
 import { GetPhotos } from "../api/photo";
 import RectPhotoPin from "./RectPhotoPin";
+import PhotoAddOverlay from "./PhotoAddOverlay";
 
 export default function KakaoMap() {
   const [center, setCenter] = useState({
@@ -35,6 +37,9 @@ export default function KakaoMap() {
     }[]
   >([]);
   const [selectedPlace, setSelectedPlace] = useState<string | null>(null);
+  const [editingPhoto, setEditingPhoto] = useState<any | null>(null);
+  const [showPhotoEditor, setShowPhotoEditor] = useState(false);
+  const [isPhotoEditorReady, setIsPhotoEditorReady] = useState(false);
 
   useEffect(() => {
     // 세션 확인
@@ -61,29 +66,31 @@ export default function KakaoMap() {
 
   useEffect(() => {
     if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const newCenter = {
-            lat: position.coords.latitude,
-            lng: position.coords.longitude,
-          };
-          setCenter(newCenter);
-          //TODO: 테스트용 하드코딩
-          setCenter({ lat: 33.55619546148889, lng: 126.79589723542207 });
-        },
-        (err) => {
-          console.error("위치 가져오기 실패:", err.message);
-        }
-      );
+      navigator.geolocation.getCurrentPosition((position) => {
+        const newCenter = {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        };
+        setCenter(newCenter);
+        //TODO: 테스트용 하드코딩
+        setCenter({ lat: 33.55619546148889, lng: 126.79589723542207 });
+      });
     } else {
       console.log("geolocation을 사용할수 없어요..");
     }
   }, []);
 
+  const fetchPhotos = useCallback(async () => {
+    const latestPhotos = await GetPhotos();
+    setPhotos(latestPhotos || []);
+  }, []);
+
   useEffect(() => {
-    GetPhotos().then((photos) => {
-      setPhotos(photos || []);
-    });
+    fetchPhotos();
+  }, [fetchPhotos]);
+
+  useEffect(() => {
+    setIsPhotoEditorReady(true);
   }, []);
 
   const [onRoadview, setOnRoadview] = useState(false);
@@ -145,229 +152,272 @@ export default function KakaoMap() {
   };
 
   return (
-    <div className="relative">
-      <Script
-        src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
-        strategy="beforeInteractive"
-      ></Script>
-      <Map
-        center={center}
-        level={3}
-        style={{ width: "100vw", height: "100vh" }}
-        onCreate={(mapInstance) => {
-          setMap(mapInstance);
-          setIsKakaoLoaded(true);
-        }}
-        onClick={(_, mouseEvent) => {
-          const latlng = mouseEvent.latLng;
-          const clickedPosition = {
-            lat: latlng.getLat(),
-            lng: latlng.getLng(),
-          };
+    <>
+      <div className="relative">
+        <Script
+          src={`https://dapi.kakao.com/v2/maps/sdk.js?appkey=${process.env.NEXT_PUBLIC_KAKAO_MAP_KEY}&autoload=false&libraries=services`}
+          strategy="beforeInteractive"
+        ></Script>
+        <Map
+          center={center}
+          level={3}
+          style={{ width: "100vw", height: "100vh" }}
+          onCreate={(mapInstance) => {
+            setMap(mapInstance);
+            setIsKakaoLoaded(true);
+          }}
+          onClick={(_, mouseEvent) => {
+            const latlng = mouseEvent.latLng;
+            const clickedPosition = {
+              lat: latlng.getLat(),
+              lng: latlng.getLng(),
+            };
 
-          if (onRoadview) {
-            setCenter(clickedPosition);
-          } else {
-            // 일반 지도 모드에서는 오버레이 위치만 변경
-            setOverlayPosition(clickedPosition);
-          }
-          //TODO: 테스트용
-          console.log(clickedPosition);
-        }}
-      >
-        {!onRoadview && overlayPosition && (
-          <MapMarker
-            position={overlayPosition}
-            onClick={() => setShowOverlayForm(!showOverlayForm)}
-          />
-        )}
-        {searchMarkers.map((marker) => (
-          <React.Fragment key={`search-${marker.id}`}>
+            if (onRoadview) {
+              setCenter(clickedPosition);
+            } else {
+              // 일반 지도 모드에서는 오버레이 위치만 변경
+              setOverlayPosition(clickedPosition);
+            }
+            //TODO: 테스트용
+            console.log(clickedPosition);
+          }}
+        >
+          {!onRoadview && overlayPosition && (
             <MapMarker
-              position={marker.position}
-              onClick={() => {
-                setShowOverlayForm(true);
-                setOverlayPosition(marker.position);
-              }}
-              clickable={true}
-              onMouseOver={() => setSelectedPlace(marker.id)}
-              onMouseOut={() => setSelectedPlace(null)}
-            />
-            {selectedPlace === marker.id && (
-              <CustomOverlayMap position={marker.position} yAnchor={2}>
-                <div className="bg-white text-gray-800 px-3 py-2 rounded-xl shadow-lg border border-gray-200 text-sm font-semibold whitespace-nowrap">
-                  {marker.content}
-                </div>
-              </CustomOverlayMap>
-            )}
-          </React.Fragment>
-        ))}
-        {showOverlayForm && overlayPosition && (
-          <CustomOverlayMap
-            position={overlayPosition}
-            yAnchor={1.5}
-            clickable={true}
-          >
-            <AddOverlay
-              onClose={() => {
-                setShowOverlayForm(false);
-                setOverlayPosition(null);
-              }}
               position={overlayPosition}
+              onClick={() => setShowOverlayForm(!showOverlayForm)}
             />
-          </CustomOverlayMap>
-        )}
-        <div className="absolute top-4 z-10 w-full px-4 flex flex-wrap gap-3 items-start md:items-end">
-          <div className="flex flex-wrap gap-2 items-center">
-            <button
-              onClick={() => {
-                setOnRoadview(!onRoadview);
-              }}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg flex items-center justify-center gap-1"
-              aria-label={onRoadview ? "지도 모드" : "로드뷰 모드"}
-            >
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 24 24"
-                className="w-5 h-5 text-gray-700"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.8"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-              >
-                <path d="M3 15h18" />
-                <path d="M5 15l1.5-4.5A2 2 0 0 1 8.4 9h7.2a2 2 0 0 1 1.9 1.5L19 15" />
-                <circle cx="7" cy="18" r="1.5" />
-                <circle cx="17" cy="18" r="1.5" />
-              </svg>
-              <span className="hidden md:inline">
-                {onRoadview ? "지도 모드" : "로드뷰 모드"}
-              </span>
-            </button>
-            <button
-              onClick={() => {
-                if (navigator.geolocation) {
-                  navigator.geolocation.getCurrentPosition(
-                    (position) => {
-                      const currentPosition = {
-                        lat: position.coords.latitude,
-                        lng: position.coords.longitude,
-                      };
-                      setCenter(currentPosition);
-                    },
-                    (err) => {
-                      console.error("위치 가져오기 실패:", err.message);
-                    }
-                  );
-                }
-              }}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg flex items-center justify-center gap-1"
-              aria-label="내 위치"
-            >
-              <span aria-hidden="true" className="text-lg">
-                📍
-              </span>
-              <span className="hidden md:inline">내 위치</span>
-            </button>
-            <div className="flex flex-wrap gap-2 items-center">
-              <div className="relative flex-1 min-w-[200px] md:w-64">
-                <input
-                  type="text"
-                  value={searchKeyword}
-                  onChange={(e) => setSearchKeyword(e.target.value)}
-                  onKeyPress={(e) => {
-                    if (e.key === "Enter") {
-                      handleSearch();
-                    }
-                  }}
-                  placeholder="장소 검색"
-                  className="bg-white text-gray-800 py-2 pl-4 pr-12 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
-                />
-                <button
-                  onClick={handleSearch}
-                  className="absolute inset-y-1 right-1 px-3 rounded-md text-gray-700 hover:text-gray-900 flex items-center justify-center"
-                  aria-label="검색"
-                >
-                  🔍
-                </button>
-              </div>
-            </div>
-          </div>
-          <div className="flex md:ml-auto shrink-0">
-            <button
-              onClick={handleAuthClick}
-              className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
-            >
-              {isLoggedIn ? "로그아웃" : "로그인"}
-            </button>
-          </div>
-        </div>
-        {onRoadview && (
-          <>
-            <MapTypeId type={kakao.maps.MapTypeId.ROADVIEW} />
-            <MapMarker
-              position={center}
-              draggable={true}
-              onDragEnd={(marker) => {
-                setCenter({
-                  // @ts-ignore
-                  lat: marker.getPosition().getLat(),
-                  // @ts-ignore
-                  lng: marker.getPosition().getLng(),
-                });
-                setIsError(false);
-              }}
-              image={{
-                src: "https://t1.daumcdn.net/localimg/localimages/07/2018/pc/roadview_minimap_wk_2018.png",
-                size: { width: 26, height: 46 },
-                options: {
-                  spriteSize: { width: 1666, height: 168 },
-                  spriteOrigin: { x: 705, y: 114 },
-                  offset: { x: 13, y: 46 },
-                },
-              }}
-            />
-          </>
-        )}
-        {photos.map((photo) => {
-          const canOpen = userId && photo.uuid === userId;
-          return (
+          )}
+          {searchMarkers.map((marker) => (
+            <React.Fragment key={`search-${marker.id}`}>
+              <MapMarker
+                position={marker.position}
+                onClick={() => {
+                  setShowOverlayForm(true);
+                  setOverlayPosition(marker.position);
+                }}
+                clickable={true}
+                onMouseOver={() => setSelectedPlace(marker.id)}
+                onMouseOut={() => setSelectedPlace(null)}
+              />
+              {selectedPlace === marker.id && (
+                <CustomOverlayMap position={marker.position} yAnchor={2}>
+                  <div className="bg-white text-gray-800 px-3 py-2 rounded-xl shadow-lg border border-gray-200 text-sm font-semibold whitespace-nowrap">
+                    {marker.content}
+                  </div>
+                </CustomOverlayMap>
+              )}
+            </React.Fragment>
+          ))}
+          {showOverlayForm && overlayPosition && (
             <CustomOverlayMap
-              key={
-                photo.id ||
-                `${photo.latitude}-${photo.longitude}-${photo.photo_url}`
-              }
-              position={{ lat: photo.latitude, lng: photo.longitude }}
-              yAnchor={0.7}
-              clickable={!!canOpen}
+              position={overlayPosition}
+              yAnchor={1.5}
+              clickable={true}
             >
-              <RectPhotoPin
-                src={photo.photo_url}
-                onClick={
-                  canOpen
-                    ? () => window.open(photo.photo_url, "_blank")
-                    : undefined
-                }
-                width={46}
-                height={46}
-                disabled={!canOpen}
+              <AddOverlay
+                onClose={() => {
+                  setShowOverlayForm(false);
+                  setOverlayPosition(null);
+                }}
+                position={overlayPosition}
+                onPhotoAdded={fetchPhotos}
               />
             </CustomOverlayMap>
-          );
-        })}
-      </Map>
-      {onRoadview && (
-        <Roadview
-          position={{ ...center, radius: 50 }}
-          style={{
-            width: isError ? "0" : "50%",
-            height: "300px",
-          }}
-          onErrorGetNearestPanoId={() => setIsError(true)}
-          className="absolute top-10 right-10 z-10"
-        ></Roadview>
-      )}
-    </div>
+          )}
+          <div className="absolute top-4 z-10 w-full px-4 flex flex-wrap gap-3 items-start md:items-end">
+            <div className="flex flex-wrap gap-2 items-center">
+              <button
+                onClick={() => {
+                  setOnRoadview(!onRoadview);
+                }}
+                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg flex items-center justify-center gap-1"
+                aria-label={onRoadview ? "지도 모드" : "로드뷰 모드"}
+              >
+                <svg
+                  aria-hidden="true"
+                  viewBox="0 0 24 24"
+                  className="w-5 h-5 text-gray-700"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.8"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                >
+                  <path d="M3 15h18" />
+                  <path d="M5 15l1.5-4.5A2 2 0 0 1 8.4 9h7.2a2 2 0 0 1 1.9 1.5L19 15" />
+                  <circle cx="7" cy="18" r="1.5" />
+                  <circle cx="17" cy="18" r="1.5" />
+                </svg>
+                <span className="hidden md:inline">
+                  {onRoadview ? "지도 모드" : "로드뷰 모드"}
+                </span>
+              </button>
+              <button
+                onClick={() => {
+                  if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                      (position) => {
+                        const currentPosition = {
+                          lat: position.coords.latitude,
+                          lng: position.coords.longitude,
+                        };
+                        setCenter(currentPosition);
+                      },
+                      (err) => {
+                        console.error("위치 가져오기 실패:", err.message);
+                      }
+                    );
+                  }
+                }}
+                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg flex items-center justify-center gap-1"
+                aria-label="내 위치"
+              >
+                <span aria-hidden="true" className="text-lg">
+                  📍
+                </span>
+                <span className="hidden md:inline">내 위치</span>
+              </button>
+              <div className="flex flex-wrap gap-2 items-center">
+                <div className="relative flex-1 min-w-[200px] md:w-64">
+                  <input
+                    type="text"
+                    value={searchKeyword}
+                    onChange={(e) => setSearchKeyword(e.target.value)}
+                    onKeyPress={(e) => {
+                      if (e.key === "Enter") {
+                        handleSearch();
+                      }
+                    }}
+                    placeholder="장소 검색"
+                    className="bg-white text-gray-800 py-2 pl-4 pr-12 rounded-lg shadow-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500 w-full"
+                  />
+                  <button
+                    onClick={handleSearch}
+                    className="absolute inset-y-1 right-1 px-3 rounded-md text-gray-700 hover:text-gray-900 flex items-center justify-center"
+                    aria-label="검색"
+                  >
+                    🔍
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div className="flex md:ml-auto shrink-0">
+              <button
+                onClick={handleAuthClick}
+                className="bg-white hover:bg-gray-100 text-gray-800 font-semibold py-2 px-4 rounded-lg shadow-lg text-center"
+              >
+                {isLoggedIn ? "로그아웃" : "로그인"}
+              </button>
+            </div>
+          </div>
+          {onRoadview && (
+            <>
+              <MapTypeId type={kakao.maps.MapTypeId.ROADVIEW} />
+              <MapMarker
+                position={center}
+                draggable={true}
+                onDragEnd={(marker) => {
+                  setCenter({
+                    // @ts-ignore
+                    lat: marker.getPosition().getLat(),
+                    // @ts-ignore
+                    lng: marker.getPosition().getLng(),
+                  });
+                  setIsError(false);
+                }}
+                image={{
+                  src: "https://t1.daumcdn.net/localimg/localimages/07/2018/pc/roadview_minimap_wk_2018.png",
+                  size: { width: 26, height: 46 },
+                  options: {
+                    spriteSize: { width: 1666, height: 168 },
+                    spriteOrigin: { x: 705, y: 114 },
+                    offset: { x: 13, y: 46 },
+                  },
+                }}
+              />
+            </>
+          )}
+          {photos.map((photo) => {
+            const canOpen = userId && photo.uuid === userId;
+            return (
+              <CustomOverlayMap
+                key={
+                  photo.id ||
+                  `${photo.latitude}-${photo.longitude}-${photo.photo_url}`
+                }
+                position={{ lat: photo.latitude, lng: photo.longitude }}
+                yAnchor={0.7}
+                clickable={!!canOpen}
+              >
+                <RectPhotoPin
+                  src={photo.photo_url}
+                  onClick={
+                    canOpen
+                      ? () => {
+                          setEditingPhoto(photo);
+                          setShowPhotoEditor(true);
+                        }
+                      : undefined
+                  }
+                  width={46}
+                  height={46}
+                  disabled={!canOpen}
+                />
+              </CustomOverlayMap>
+            );
+          })}
+        </Map>
+        {onRoadview && (
+          <Roadview
+            position={{ ...center, radius: 50 }}
+            style={{
+              width: isError ? "0" : "50%",
+              height: "300px",
+            }}
+            onErrorGetNearestPanoId={() => setIsError(true)}
+            className="absolute top-10 right-10 z-10"
+          ></Roadview>
+        )}
+      </div>
+      {isPhotoEditorReady && showPhotoEditor && editingPhoto
+        ? createPortal(
+            <div
+              className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
+              onClick={() => {
+                setShowPhotoEditor(false);
+                setEditingPhoto(null);
+              }}
+            >
+              <PhotoAddOverlay
+                onClose={() => {
+                  setShowPhotoEditor(false);
+                  setEditingPhoto(null);
+                }}
+                position={{
+                  lat:
+                    editingPhoto.latitude?.toString() ??
+                    editingPhoto.lat?.toString() ??
+                    "0",
+                  lng:
+                    editingPhoto.longitude?.toString() ??
+                    editingPhoto.lng?.toString() ??
+                    "0",
+                }}
+                onPhotoUpdated={fetchPhotos}
+                photo={{
+                  id: editingPhoto.id,
+                  description: editingPhoto.description,
+                  date: editingPhoto.date,
+                  shared: editingPhoto.shared,
+                  photo_url: editingPhoto.photo_url,
+                }}
+              />
+            </div>,
+            document.body
+          )
+        : null}
+    </>
   );
 }

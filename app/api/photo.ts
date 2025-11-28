@@ -120,6 +120,23 @@ export async function UpdatePhoto(
     shared: update.shared,
   };
 
+  if (file) {
+    const uniqueFileName = await getUniqueFileName(file.name);
+    const { error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(`${PHOTO_FOLDER}/${uniqueFileName}`, file, {
+        upsert: false,
+      });
+    if (uploadError) {
+      console.error("Error uploading replacement file:", uploadError);
+      return null;
+    }
+    const { data: publicUrlData } = supabase.storage
+      .from(`${process.env.NEXT_PUBLIC_SUPABASE_BUCKET}`)
+      .getPublicUrl(`photos/${uniqueFileName}`);
+    payload.photo_url = publicUrlData.publicUrl;
+  }
+
   const { data, error } = await supabase
     .from("photo")
     .update(payload)
@@ -160,5 +177,18 @@ export async function GetPhotos() {
       return null;
     }
     return data;
+  }
+}
+
+export async function DeletePhotos(photoId: number, photoUrl: string) {
+  const fileName = photoUrl.substring(photoUrl.lastIndexOf("/") + 1); // "abc123.jpg"
+  try {
+  const responseStorage = await supabase.storage.from(BUCKET).remove([`${PHOTO_FOLDER}/${fileName}`]);
+  console.log("Storage deletion response:", responseStorage);
+  const response = await supabase.from("photo").delete().eq("id", photoId);
+  return response;
+  } catch (error) {
+    console.error("Error deleting photo:", error);
+    throw error;
   }
 }

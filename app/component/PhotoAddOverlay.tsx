@@ -1,22 +1,57 @@
 "use client";
-import { useState } from "react";
-import { AddPhoto } from "../api/photo";
+import { useEffect, useState } from "react";
+import { AddPhoto, DeletePhotos, UpdatePhoto } from "../api/photo";
 import supabase from "../utils/supabaseConfig";
 
 interface PhotoOverlayProps {
   onClose: () => void;
   position: { lat: string; lng: string };
+  onPhotoAdded?: () => void | Promise<void>;
+  onPhotoUpdated?: () => void | Promise<void>;
+  photo?: {
+    id: number;
+    description: string;
+    date: string;
+    shared: boolean;
+    photo_url?: string;
+  };
 }
 
-export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
+export default function PhotoAddOverlay({
+  onClose,
+  position,
+  onPhotoAdded,
+  onPhotoUpdated,
+  photo,
+}: PhotoOverlayProps) {
   const [file, setFile] = useState<File | null>(null);
-  const [description, setDescription] = useState("");
-  const [preview, setPreview] = useState<string | null>(null);
+  const [description, setDescription] = useState(photo?.description ?? "");
+  const [preview, setPreview] = useState<string | null>(
+    photo?.photo_url ?? null
+  );
   const [isUploading, setIsUploading] = useState(false);
   const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
+    (photo?.date ? new Date(photo.date) : new Date())
+      .toISOString()
+      .split("T")[0]
   );
-  const [isShared, setIsShared] = useState(false);
+  const [isShared, setIsShared] = useState(photo?.shared ?? false);
+  const isEditMode = !!photo;
+
+  useEffect(() => {
+    if (!photo) {
+      return;
+    }
+    setDescription(photo.description ?? "");
+    setPreview(photo.photo_url ?? null);
+    setSelectedDate(
+      (photo.date ? new Date(photo.date) : new Date())
+        .toISOString()
+        .split("T")[0]
+    );
+    setIsShared(photo.shared ?? false);
+    setFile(null);
+  }, [photo]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -31,7 +66,7 @@ export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
   };
 
   const handleSubmit = async () => {
-    if (!file) {
+    if (!isEditMode && !file) {
       alert("사진을 선택해주세요");
       return;
     }
@@ -47,20 +82,52 @@ export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
         return;
       }
 
-      await AddPhoto(session, file, {
-        description,
-        lat: position.lat,
-        lng: position.lng,
-        date: new Date(selectedDate).toISOString(),
-        shared: isShared,
-      });
-      alert("사진이 추가되었습니다");
+      if (isEditMode && photo) {
+        await UpdatePhoto(
+          session,
+          photo.id,
+          {
+            description,
+            lat: parseFloat(position.lat),
+            lng: parseFloat(position.lng),
+            date: new Date(selectedDate).toISOString(),
+            shared: isShared,
+          },
+          file ?? undefined
+        );
+        await onPhotoUpdated?.();
+        alert("사진이 수정되었습니다");
+      } else if (file) {
+        await AddPhoto(session, file, {
+          description,
+          lat: position.lat,
+          lng: position.lng,
+          date: new Date(selectedDate).toISOString(),
+          shared: isShared,
+        });
+        await onPhotoAdded?.();
+        alert("사진이 추가되었습니다");
+      }
       onClose();
     } catch (error) {
       console.error("Error uploading photo:", error);
-      alert("사진 업로드에 실패했습니다");
+      alert(
+        isEditMode ? "사진 수정에 실패했습니다" : "사진 업로드에 실패했습니다"
+      );
     } finally {
       setIsUploading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (isEditMode && photo) {
+      const confirmDelete = confirm("정말로 이 사진을 삭제하시겠습니까?");
+      if (!confirmDelete) {
+        return;
+      }
+      await DeletePhotos(photo.id, photo.photo_url ?? "");
+      await onPhotoUpdated?.();
+      onClose();
     }
   };
 
@@ -70,7 +137,9 @@ export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
       className="bg-white rounded-lg shadow-xl p-6 min-w-[400px]"
     >
       <div className="flex justify-between items-center mb-4">
-        <h3 className="text-lg font-bold text-gray-800">사진 추가하기</h3>
+        <h3 className="text-lg font-bold text-gray-800">
+          {isEditMode ? "사진 수정하기" : "사진 추가하기"}
+        </h3>
         <button
           onClick={onClose}
           className="text-gray-500 hover:text-gray-700 text-2xl"
@@ -130,10 +199,16 @@ export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
         <div className="flex gap-2">
           <button
             onClick={handleSubmit}
-            disabled={isUploading || !file}
+            disabled={isUploading || (!isEditMode && !file)}
             className="flex-1 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white font-semibold py-2 px-4 rounded-lg"
           >
-            {isUploading ? "업로드 중..." : "추가하기"}
+            {isUploading
+              ? isEditMode
+                ? "수정 중..."
+                : "업로드 중..."
+              : isEditMode
+              ? "수정하기"
+              : "추가하기"}
           </button>
           <button
             onClick={onClose}
@@ -155,6 +230,14 @@ export default function PhotoOverlay({ onClose, position }: PhotoOverlayProps) {
               className="mr-2"
             />
             <label className="text-sm text-gray-600">다른 사람과 공유</label>
+            {isEditMode ? (
+              <button
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-400 text-white font-semibold py-2 px-2 rounded-lg ml-25"
+                onClick={handleDelete}
+              >
+                삭제
+              </button>
+            ) : null}
           </div>
           <p className="text-xs text-gray-400">
             *다른 사람과 공유된 사진은 모두가 볼 수 있습니다.
