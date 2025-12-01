@@ -9,8 +9,11 @@ import KakaoLogo from "@/app/images/KakaoLogo";
 import { LoginFormType } from "@/app/types/formType";
 import supabase from "@/app/utils/supabaseConfig";
 import { loginUser } from "@/app/api/auth";
+import { useMessageOverlay } from "@/app/hooks/useMessageOverlay";
 
 export default function LoginForm() {
+  const { showMessage, overlay } = useMessageOverlay();
+
   useEffect(() => {
     // 세션 확인
     const checkSession = async () => {
@@ -36,11 +39,13 @@ export default function LoginForm() {
   const logInSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!payload.username && !payload.password) {
-      return alert("아이디와 비밀번호를 입력해주세요.");
+      showMessage("아이디와 비밀번호를 입력해주세요.");
+      return;
     }
     const { data, error } = await loginUser(payload.username, payload.password);
     if (error) {
-      return alert("로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.");
+      showMessage("로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.");
+      return;
     } else {
       const {
         data: { session },
@@ -62,6 +67,7 @@ export default function LoginForm() {
   };
   return (
     <Suspense>
+      <>
       <div className="h-screen px-40 flex flex-1 justify-center py-5 bg-white items-center">
         <div className="layout-content-container flex flex-col w-lg max-w-lg py-5 flex-1 items-center">
           <form onSubmit={logInSubmit}>
@@ -155,6 +161,8 @@ export default function LoginForm() {
           </form>
         </div>
       </div>
+      {overlay}
+      </>
     </Suspense>
   );
 }

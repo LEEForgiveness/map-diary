@@ -15,6 +15,7 @@ import supabase from "../utils/supabaseConfig";
 import { GetPhotos } from "../api/photo";
 import RectPhotoPin from "./RectPhotoPin";
 import PhotoAddOverlay from "./PhotoAddOverlay";
+import { useMessageOverlay } from "../hooks/useMessageOverlay";
 
 export default function KakaoMap() {
   const [center, setCenter] = useState({
@@ -40,6 +41,7 @@ export default function KakaoMap() {
   const [editingPhoto, setEditingPhoto] = useState<any | null>(null);
   const [showPhotoEditor, setShowPhotoEditor] = useState(false);
   const [isPhotoEditorReady, setIsPhotoEditorReady] = useState(false);
+  const { showMessage, overlay: messageOverlay } = useMessageOverlay();
 
   useEffect(() => {
     // 세션 확인
@@ -101,22 +103,22 @@ export default function KakaoMap() {
   const router = useRouter();
   const handleSearch = useCallback(() => {
     if (!isKakaoLoaded || !map) {
-      alert("지도를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
+      showMessage("지도를 불러오는 중입니다. 잠시 후 다시 시도해주세요.");
       return;
     }
     if (!searchKeyword.trim()) {
-      alert("검색어를 입력해주세요");
+      showMessage("검색어를 입력해주세요");
       return;
     }
     if (!window.kakao?.maps?.services) {
-      alert("검색 서비스를 사용할 수 없습니다.");
+      showMessage("검색 서비스를 사용할 수 없습니다.");
       return;
     }
 
     const places = new kakao.maps.services.Places();
     places.keywordSearch(searchKeyword, (data, status) => {
       if (status !== kakao.maps.services.Status.OK) {
-        alert("검색 결과가 없습니다.");
+        showMessage("검색 결과가 없습니다.");
         setSearchMarkers([]);
         setSelectedPlace(null);
         return;
@@ -418,6 +420,7 @@ export default function KakaoMap() {
             document.body
           )
         : null}
+      {messageOverlay}
     </>
   );
 }

@@ -2,12 +2,14 @@
 
 import { registerUser } from "@/app/api/auth";
 import HeaderIcon from "@/app/images/HeaderIcon";
-import React, { useEffect, useState } from "react";
+import React, { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import supabase from "@/app/utils/supabaseConfig";
+import { useMessageOverlay } from "@/app/hooks/useMessageOverlay";
 
 export default function page() {
   const router = useRouter();
+  const { showMessage, overlay } = useMessageOverlay();
   useEffect(() => {
     // 세션 확인
     const checkSession = async () => {
@@ -46,7 +48,7 @@ export default function page() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert("비밀번호가 일치하지 않습니다.");
+      showMessage("비밀번호가 일치하지 않습니다.");
       return;
     }
     const { data, error } = await registerUser(formData);
@@ -56,22 +58,23 @@ export default function page() {
       if (error.message?.includes("Password should be at least 8 characters")) {
         message =
           "비밀번호는 8자 이상, 영문 대소문자/숫자를 각각 하나 이상 포함해야 합니다.";
-      } else if (error.message) {
-        message = `회원가입에 실패했습니다: ${error.message}`;
+      } else if (error.message?.includes("Email address")) {
+        message = `회원가입에 실패했습니다: 다른 이메일 주소를 사용해 주세요.`;
       }
 
-      alert(message);
+      showMessage(message);
       return;
     }
 
     if (!data?.user) {
-      alert("회원가입 정보를 확인할 수 없습니다. 다시 시도해주세요.");
+      showMessage("회원가입 정보를 확인할 수 없습니다. 다시 시도해주세요.");
       return;
     }
-    alert(
-      "가입 확인 메일을 보냈습니다.만약 이미 가입된 이메일이라면 인증 메일이 발송되지 않습니다. 로그인을 시도해 보세요."
+    showMessage(
+      "가입 확인 메일을 보냈습니다.만약 이미 가입된 이메일이라면 인증 메일이 발송되지 않습니다. 로그인을 시도해 보세요.",
+      () => router.push("/login")
     );
-    router.push("/login");
+    return;
   };
 
   return (
@@ -180,6 +183,7 @@ export default function page() {
           </div>
         </form>
       </div>
+      {overlay}
     </div>
   );
 }
