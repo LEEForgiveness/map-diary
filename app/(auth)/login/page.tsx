@@ -1,11 +1,8 @@
 "use client";
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
-import { useSearchParams } from "next/navigation";
 
 import HeaderIcon from "@/app/images/HeaderIcon";
-import GoogleLogo from "@/app/images/GoogleLogo";
-import KakaoLogo from "@/app/images/KakaoLogo";
 import { LoginFormType } from "@/app/types/formType";
 import supabase from "@/app/utils/supabaseConfig";
 import { loginUser } from "@/app/api/auth";
@@ -26,8 +23,6 @@ export default function LoginForm() {
     };
     checkSession();
   }, []);
-  const param = useSearchParams();
-  const callbackUrl = param.get("callbackUrl");
 
   const [payload, setPayload] = useState<LoginFormType>({
     username: "",
@@ -49,11 +44,7 @@ export default function LoginForm() {
         data: { session },
       } = await supabase.auth.getSession();
       console.log("session after login:", session);
-      if (callbackUrl) {
-        window.location.href = callbackUrl;
-      } else {
-        window.location.href = "/";
-      }
+      window.location.href = "/";
     }
   };
 
