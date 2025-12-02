@@ -1,34 +1,39 @@
 "use client";
-
-import { useCallback, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import MessageOverlay from "../component/MessageOverlay";
 
 export function useMessageOverlay() {
   const [message, setMessage] = useState<string | null>(null);
-  const [afterClose, setAfterClose] = useState<(() => void) | null>(null);
-
-  const showMessage = useCallback(
-    (text: string, onClose?: () => void) => {
-      setMessage(text);
-      setAfterClose(() => onClose ?? null);
-    },
-    []
+  const [onCloseCallback, setOnCloseCallback] = useState<(() => void) | null>(
+    null
   );
+  const [isMounted, setIsMounted] = useState(false);
 
-  const handleClose = useCallback(() => {
-    const callback = afterClose;
+  useEffect(() => {
+    setIsMounted(true);
+  }, []);
+
+  const showMessage = (msg: string, callback?: () => void) => {
+    setMessage(msg);
+    setOnCloseCallback(() => callback || null);
+  };
+
+  const handleClose = () => {
     setMessage(null);
-    setAfterClose(null);
-    callback?.();
-  }, [afterClose]);
+    if (onCloseCallback) {
+      onCloseCallback();
+      setOnCloseCallback(null);
+    }
+  };
 
-  const overlay = useMemo(
-    () =>
-      message ? (
-        <MessageOverlay message={message} onClose={handleClose} />
-      ) : null,
-    [handleClose, message]
-  );
+  const overlay =
+    message && isMounted
+      ? createPortal(
+          <MessageOverlay message={message} onClose={handleClose} />,
+          document.body
+        )
+      : null;
 
   return { showMessage, overlay };
 }
