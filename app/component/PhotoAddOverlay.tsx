@@ -37,6 +37,7 @@ export default function PhotoAddOverlay({
       .split("T")[0]
   );
   const [isShared, setIsShared] = useState(photo?.shared ?? false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const isEditMode = !!photo;
   const { showMessage, overlay: messageOverlay } = useMessageOverlay();
 
@@ -120,16 +121,21 @@ export default function PhotoAddOverlay({
     }
   };
 
-  const handleDelete = async () => {
+  const handleDeleteClick = () => {
+    setShowDeleteConfirm(true);
+  };
+
+  const handleDeleteConfirm = async () => {
     if (isEditMode && photo) {
-      const confirmDelete = confirm("정말로 이 사진을 삭제하시겠습니까?");
-      if (!confirmDelete) {
-        return;
-      }
       await DeletePhotos(photo.id, photo.photo_url ?? "");
       await onPhotoUpdated?.();
+      setShowDeleteConfirm(false);
       onClose();
     }
+  };
+
+  const handleDeleteCancel = () => {
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -235,7 +241,7 @@ export default function PhotoAddOverlay({
               {isEditMode ? (
                 <button
                   className="ml-auto bg-red-600 hover:bg-red-700 text-white font-semibold py-2 px-4 rounded-lg"
-                  onClick={handleDelete}
+                  onClick={handleDeleteClick}
                 >
                   삭제
                 </button>
@@ -247,6 +253,32 @@ export default function PhotoAddOverlay({
           </div>
         </div>
       </div>
+
+      {/* 삭제 확인 모달 */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-9999 flex items-center justify-center bg-black/40">
+          <div className="bg-white rounded-xl shadow-xl px-8 py-6 min-w-[320px] flex flex-col items-center">
+            <div className="text-gray-800 text-base mb-6 text-center">
+              정말로 이 사진을 삭제하시겠습니까?
+            </div>
+            <div className="flex gap-3 w-full">
+              <button
+                onClick={handleDeleteCancel}
+                className="flex-1 bg-gray-200 hover:bg-gray-300 text-gray-800 font-semibold px-6 py-2 rounded-lg"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDeleteConfirm}
+                className="flex-1 bg-red-600 hover:bg-red-700 text-white font-semibold px-6 py-2 rounded-lg"
+              >
+                삭제
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {messageOverlay}
     </>
   );

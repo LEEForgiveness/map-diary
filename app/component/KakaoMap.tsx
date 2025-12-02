@@ -4,6 +4,7 @@ import React, { useCallback, useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 import {
   CustomOverlayMap,
+  CustomOverlayRoadview,
   Map,
   MapMarker,
   MapTypeId,
@@ -75,7 +76,6 @@ export default function KakaoMap() {
         };
         setCenter(newCenter);
         //TODO: 테스트용 하드코딩
-        setCenter({ lat: 33.55619546148889, lng: 126.79589723542207 });
       });
     } else {
       console.log("geolocation을 사용할수 없어요..");
@@ -85,6 +85,9 @@ export default function KakaoMap() {
   const fetchPhotos = useCallback(async () => {
     const latestPhotos = await GetPhotos();
     setPhotos(latestPhotos || []);
+    // 사진 추가/수정 후 검색 마커 초기화
+    setSearchMarkers([]);
+    setSelectedPlace(null);
   }, []);
 
   useEffect(() => {
@@ -147,6 +150,7 @@ export default function KakaoMap() {
       // 로그아웃
       await supabase.auth.signOut();
       setIsLoggedIn(false);
+      window.location.reload();
     } else {
       // 로그인 페이지로 이동
       router.push("/login");
@@ -380,7 +384,37 @@ export default function KakaoMap() {
             }}
             onErrorGetNearestPanoId={() => setIsError(true)}
             className="absolute top-10 right-10 z-10"
-          ></Roadview>
+          >
+            {photos.map((photo) => {
+              const canOpen = userId && photo.uuid === userId;
+              return (
+                <CustomOverlayRoadview
+                  key={
+                    photo.id ||
+                    `${photo.latitude}-${photo.longitude}-${photo.photo_url}`
+                  }
+                  position={{ lat: photo.latitude, lng: photo.longitude }}
+                  yAnchor={0.7}
+                  clickable={!!canOpen}
+                >
+                  <RectPhotoPin
+                    src={photo.photo_url}
+                    onClick={
+                      canOpen
+                        ? () => {
+                            setEditingPhoto(photo);
+                            setShowPhotoEditor(true);
+                          }
+                        : undefined
+                    }
+                    width={100}
+                    height={100}
+                    disabled={!canOpen}
+                  />
+                </CustomOverlayRoadview>
+              );
+            })}
+          </Roadview>
         )}
       </div>
       {isPhotoEditorReady && showPhotoEditor && editingPhoto

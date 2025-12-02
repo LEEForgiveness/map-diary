@@ -52,7 +52,7 @@ export default function PhotoPin({ src, size = 44, onClick }: Props) {
       {/* 바닥 그림자 */}
       <div
         className="
-          absolute left-1/2 top-[100%] h-2 w-6 -translate-x-1/2
+          absolute left-1/2 top-full h-2 w-6 -translate-x-1/2
           rounded-full bg-black/20 blur-[2px]
           transition-all duration-200
           group-hover:w-7 group-hover:bg-black/25

@@ -6,6 +6,17 @@ const BUCKET = process.env.NEXT_PUBLIC_SUPABASE_BUCKET ?? "";
 const PHOTO_FOLDER = "photos";
 
 async function getUniqueFileName(fileName: string) {
+  const hasNonEnglish = /[^a-zA-Z0-9._-]/.test(fileName);
+  console.log("hasNonEnglish:", hasNonEnglish);
+  
+  if (hasNonEnglish) {
+    // 파일명을 영문으로 변환 (예: timestamp 사용)
+    const dotIndex = fileName.lastIndexOf(".");
+    const extension = dotIndex === -1 ? "" : fileName.slice(dotIndex);
+    fileName = `photo-${Date.now()}${extension}`;
+  }
+
+
   const dotIndex = fileName.lastIndexOf(".");
   const base = dotIndex === -1 ? fileName : fileName.slice(0, dotIndex);
   const extension = dotIndex === -1 ? "" : fileName.slice(dotIndex);
@@ -38,8 +49,6 @@ async function getUniqueFileName(fileName: string) {
     suffix += 1;
   }
 }
-
-
 
 export async function AddPhoto(
   session: Session,

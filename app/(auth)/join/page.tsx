@@ -78,18 +78,18 @@ export default function page() {
   };
 
   return (
-    <div className="h-screen px-40 flex flex-1 justify-center py-5 bg-white">
-      <div className="layout-content-container flex flex-col w-full py-5 flex-1 justify-center items-center">
+    <div className="min-h-screen px-4 sm:px-8 md:px-40 flex flex-1 justify-center py-5 bg-white">
+      <div className="layout-content-container flex flex-col w-full max-w-[480px] py-5 flex-1 justify-center items-center">
         <div className="flex justify-center items-center gap-2 text-[#111418] mb-5">
           <div className="size-8">
             <HeaderIcon />
           </div>
-          <h2 className="text-[#111418] tracking-light text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5">
+          <h2 className="text-[#111418] tracking-light text-2xl sm:text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5">
             Map-Diary 회원가입
           </h2>
         </div>
-        <form onSubmit={handleSubmit}>
-          <div className="flex w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
             <label className="flex flex-col min-w-40 flex-1">
               <p className="text-[#111418] text-base font-medium leading-normal pb-2">
                 이름
@@ -103,7 +103,7 @@ export default function page() {
               />
             </label>
           </div>
-          <div className="flex w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
             <label className="flex flex-col min-w-40 flex-1">
               <p className="text-[#111418] text-base font-medium leading-normal pb-2">
                 이메일
@@ -117,13 +117,13 @@ export default function page() {
               />
             </label>
           </div>
-          <div className="flex w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
             <label className="flex flex-col min-w-40 flex-1">
               <p className="text-[#111418] text-base font-medium leading-normal pb-2">
                 비밀번호
               </p>
               <input
-                placeholder="비밀번호를 입력하세요(영어/숫자 포함 8자 이상)"
+                placeholder="비밀번호를 입력하세요"
                 type="password"
                 className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border bg-white h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal ${
                   formData.password.length > 0 && !isPasswordValid
@@ -142,7 +142,7 @@ export default function page() {
               )}
             </label>
           </div>
-          <div className="flex w-[480px] flex-wrap items-end gap-4 px-4 py-3">
+          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
             <label className="flex flex-col min-w-40 flex-1">
               <p className="text-[#111418] text-base font-medium leading-normal pb-2">
                 비밀번호 확인
@@ -166,12 +166,12 @@ export default function page() {
               )}
             </label>
           </div>
-          <div className="flex flex-col items-start w-[480px] px-4 py-3">
-            <div className="flex flex-1 gap-3 flex-wrap py-3 justify-start">
+          <div className="flex flex-col items-start w-full px-4 py-3">
+            <div className="flex flex-1 gap-3 flex-wrap py-3 justify-start w-full">
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className={`flex min-w-[84px] max-w-[480px] items-center justify-center overflow-hidden rounded-xl h-12 px-5 text-base font-bold leading-normal tracking-[0.015em] ${
+                className={`flex w-full items-center justify-center overflow-hidden rounded-xl h-12 px-5 text-base font-bold leading-normal tracking-[0.015em] ${
                   canSubmit
                     ? "cursor-pointer bg-[#1980e6] text-white"
                     : "cursor-not-allowed bg-gray-300 text-gray-500"
