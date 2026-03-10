@@ -2,7 +2,6 @@
 import Link from "next/link";
 import { useState, useEffect, Suspense } from "react";
 
-import HeaderIcon from "@/app/images/HeaderIcon";
 import { LoginFormType } from "@/app/types/formType";
 import supabase from "@/app/utils/supabaseConfig";
 import { loginUser } from "@/app/api/auth";
@@ -12,7 +11,6 @@ export default function LoginForm() {
   const { showMessage, overlay } = useMessageOverlay();
 
   useEffect(() => {
-    // 세션 확인
     const checkSession = async () => {
       const {
         data: { session },
@@ -54,74 +52,160 @@ export default function LoginForm() {
       [e.target.name]: e.target.value,
     });
   };
+
   return (
     <Suspense>
       <>
-        <div className="min-h-screen px-4 sm:px-8 md:px-40 flex flex-1 justify-center py-5 bg-white items-center">
-          <div className="layout-content-container flex flex-col w-full max-w-lg py-5 flex-1 items-center">
-            <form onSubmit={logInSubmit} className="w-full">
-              <div className="flex justify-center items-center gap-4 text-[#111418] mb-5">
-                <div className="size-8">
-                  <HeaderIcon />
-                </div>
-                <h1 className="text-[#111418] text-2xl sm:text-3xl font-bold leading-tight tracking-[-0.015em]">
-                  <Link href={"/"} className="hover:underline">
-                    Map-Diary
-                  </Link>
+        {/* 배경 */}
+        <div
+          className="min-h-screen flex items-center justify-center px-4"
+          style={{ background: "var(--color-cream)" }}
+        >
+          {/* 배경 장식 원 */}
+          <div
+            className="pointer-events-none fixed inset-0 overflow-hidden"
+            aria-hidden
+          >
+            <div
+              className="absolute -top-32 -left-32 w-96 h-96 rounded-full opacity-30"
+              style={{ background: "var(--color-sand)" }}
+            />
+            <div
+              className="absolute -bottom-24 -right-24 w-80 h-80 rounded-full opacity-20"
+              style={{ background: "var(--color-coral-light)" }}
+            />
+            <div
+              className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full opacity-10"
+              style={{ background: "var(--color-sky-light)" }}
+            />
+          </div>
+
+          {/* 카드 */}
+          <div
+            className="glass-panel animate-fade-in-up w-full max-w-md rounded-3xl px-8 py-10 relative z-10"
+          >
+            {/* 헤더 */}
+            <div className="flex flex-col items-center mb-8">
+              {/* 지도 핀 아이콘 */}
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-md"
+                style={{ background: "var(--color-coral)" }}
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                    fill="white"
+                  />
+                </svg>
+              </div>
+              <Link href="/" className="group">
+                <h1
+                  className="text-2xl font-bold tracking-tight group-hover:opacity-75 transition-opacity"
+                  style={{ color: "var(--color-deep-navy)" }}
+                >
+                  Map Diary
                 </h1>
-              </div>
-              <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
-                <label className="flex flex-col w-full flex-1">
-                  <p className="text-[#111418] text-base font-medium leading-normal pb-2">
-                    이메일
-                  </p>
-                  <input
-                    placeholder="you@example.com"
-                    name="username"
-                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border border-[#dce0e5] bg-white focus:border-[#dce0e5] h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal"
-                    value={payload.username}
-                    onChange={onChangePayload}
-                  />
-                </label>
-              </div>
-              <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
-                <label className="flex flex-col w-full flex-1">
-                  <p className="text-[#111418] text-base font-medium leading-normal pb-2">
-                    비밀번호
-                  </p>
-                  <input
-                    placeholder="*******"
-                    type="password"
-                    name="password"
-                    className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border border-[#dce0e5] bg-white focus:border-[#dce0e5] h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal"
-                    value={payload.password}
-                    onChange={onChangePayload}
-                  />
-                </label>
-              </div>
-              <p className="text-[#637588] text-sm font-normal leading-normal pb-3 pt-1 px-4 underline">
-                비밀번호를 잃어버리셨나요?
+              </Link>
+              <p
+                className="text-sm mt-1"
+                style={{ color: "var(--color-warm-gray)" }}
+              >
+                지도 위의 나의 추억
               </p>
-              <div className="flex px-4 py-3">
-                <button
-                  type="submit"
-                  className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 flex-1 bg-[#1980e6] text-white text-sm font-bold leading-normal tracking-[0.015em]"
+            </div>
+
+            {/* 폼 */}
+            <form onSubmit={logInSubmit} className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--color-navy)" }}
                 >
-                  <span className="truncate">로그인</span>
-                </button>
+                  이메일
+                </label>
+                <input
+                  placeholder="you@example.com"
+                  name="username"
+                  type="email"
+                  autoComplete="email"
+                  className="w-full rounded-xl h-12 px-4 text-sm outline-none transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    border: "1px solid var(--color-sand)",
+                    color: "var(--color-deep-navy)",
+                  }}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-coral)")
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-sand)")
+                  }
+                  value={payload.username}
+                  onChange={onChangePayload}
+                />
               </div>
-              <p className="text-[#637588] text-sm font-normal leading-normal pb-3 pt-1 px-4 text-center">
-                계정이 없으신가요?
-              </p>
-              <div className="flex px-4 py-3">
-                <Link
-                  className="flex w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl h-10 px-4 flex-1 bg-transparent text-[#111418] text-sm font-bold leading-normal tracking-[0.015em]"
-                  href={"/join"}
+
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--color-navy)" }}
                 >
-                  <span className="truncate">가입하기</span>
-                </Link>
+                  비밀번호
+                </label>
+                <input
+                  placeholder="비밀번호를 입력하세요"
+                  type="password"
+                  name="password"
+                  autoComplete="current-password"
+                  className="w-full rounded-xl h-12 px-4 text-sm outline-none transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    border: "1px solid var(--color-sand)",
+                    color: "var(--color-deep-navy)",
+                  }}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-coral)")
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-sand)")
+                  }
+                  value={payload.password}
+                  onChange={onChangePayload}
+                />
               </div>
+
+              <button
+                type="submit"
+                className="w-full h-12 rounded-xl text-sm font-bold text-white mt-2 transition-all active:scale-95 hover:opacity-90"
+                style={{ background: "var(--color-coral)" }}
+              >
+                로그인
+              </button>
             </form>
+
+            {/* 하단 링크 */}
+            <div className="flex items-center justify-center gap-2 mt-6 text-sm">
+              <span style={{ color: "var(--color-warm-gray)" }}>
+                계정이 없으신가요?
+              </span>
+              <Link
+                href="/join"
+                className="font-semibold hover:underline transition-opacity"
+                style={{ color: "var(--color-coral)" }}
+              >
+                회원가입
+              </Link>
+            </div>
           </div>
         </div>
         {overlay}

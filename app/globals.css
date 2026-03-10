@@ -1,8 +1,31 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* 추억 아카이브 팔레트 */
+  --color-cream: #faf7f2;
+  --color-ivory: #f5f0e8;
+  --color-sand: #e8ddd0;
+  --color-warm-gray: #9e9189;
+  --color-deep-navy: #1e2a3a;
+  --color-navy: #2d3f55;
+  --color-coral: #e8714a;
+  --color-coral-light: #f09070;
+  --color-sky: #4a90c4;
+  --color-sky-light: #7ab3d8;
+
+  /* 유리 패널 */
+  --glass-bg: rgba(255, 252, 247, 0.88);
+  --glass-border: rgba(255, 255, 255, 0.6);
+  --glass-shadow: 0 8px 32px rgba(30, 42, 58, 0.12);
+
+  /* 카드 */
+  --card-bg: #ffffff;
+  --card-shadow: 0 4px 24px rgba(30, 42, 58, 0.10);
+  --card-shadow-hover: 0 8px 32px rgba(30, 42, 58, 0.18);
+  --card-radius: 16px;
+
+  --background: var(--color-cream);
+  --foreground: var(--color-deep-navy);
 }
 
 @theme inline {
@@ -12,15 +35,65 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* 유리 패널 유틸리티 */
+.glass-panel {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+/* 추억 카드 유틸리티 */
+.memory-card {
+  background: var(--card-bg);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.memory-card:hover {
+  box-shadow: var(--card-shadow-hover);
+  transform: translateY(-2px);
+}
+
+/* 스크롤바 숨기기 */
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* 부드러운 페이드인 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in-up {
+  animation: fadeInUp 0.4s ease both;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.3s ease both;
 }

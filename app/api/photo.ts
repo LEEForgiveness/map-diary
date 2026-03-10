@@ -1,6 +1,6 @@
 import { Session } from "@supabase/supabase-js";
 import supabase from "../utils/supabaseConfig";
-import { AddPhotoType } from "../types/photoType";
+import { AddPhotoType, Mood } from "../types/photoType";
 
 const BUCKET = process.env.NEXT_PUBLIC_SUPABASE_BUCKET ?? "";
 const PHOTO_FOLDER = "photos";
@@ -56,50 +56,36 @@ export async function AddPhoto(
   addPhoto: AddPhotoType
 ) {
   try {
-    const { data: checked, error: checkError } = await supabase
-      .from("photo")
-      .select("id")
-      .eq("latitude", addPhoto.lat)
-      .eq("longitude", addPhoto.lng);
-
-    if (checkError) {
-      console.error("Error checking duplicate photo:", checkError);
-      throw checkError;
+    const uniqueFileName = await getUniqueFileName(file.name);
+    const { data: storageData, error: uploadError } = await supabase.storage
+      .from(BUCKET)
+      .upload(`${PHOTO_FOLDER}/${uniqueFileName}`, file, {
+        upsert: false,
+      });
+    if (uploadError) {
+      console.error("Error uploading file:", uploadError);
+      return null;
     }
-
-    if ((checked?.length ?? 0) == 0) {
-      const uniqueFileName = await getUniqueFileName(file.name);
-      const { data: storageData, error: uploadError } = await supabase.storage
-        .from(BUCKET)
-        .upload(`${PHOTO_FOLDER}/${uniqueFileName}`, file, {
-          upsert: false,
-        });
-      if (uploadError) {
-        console.error("Error uploading file:", uploadError);
-        return null;
-      }
-      const { data: publicUrlData } = supabase.storage.from(`${process.env.NEXT_PUBLIC_SUPABASE_BUCKET}`).getPublicUrl(`photos/${uniqueFileName}`);
-      const { data, error } = await supabase.from("photo").insert([
-        {
-            photo_url: publicUrlData.publicUrl,
-            uuid: session?.user?.id,
-            description: addPhoto.description,
-            latitude: addPhoto.lat,
-            longitude: addPhoto.lng,
-            date: addPhoto.date,
-            shared: addPhoto.shared,
-            created_at: new Date().toISOString(),
-        },
-      ]);
-      if (error) {
+    const { data: publicUrlData } = supabase.storage
+      .from(`${process.env.NEXT_PUBLIC_SUPABASE_BUCKET}`)
+      .getPublicUrl(`photos/${uniqueFileName}`);
+    const { data, error } = await supabase.from("photo").insert([
+      {
+        photo_url: publicUrlData.publicUrl,
+        uuid: session?.user?.id,
+        description: addPhoto.description,
+        latitude: addPhoto.lat,
+        longitude: addPhoto.lng,
+        date: addPhoto.date,
+        shared: addPhoto.shared,
+        created_at: new Date().toISOString(),
+      },
+    ]);
+    if (error) {
       console.error("Error inserting photo metadata:", error);
       return null;
-      }
-      return data;
-    } else {
-        console.log("중복된 위치에 사진을 추가할 수 없습니다.");
-        return null;
     }
+    return data;
   } catch (error) {
     throw error;
   }
@@ -114,6 +100,8 @@ export async function UpdatePhoto(
     lng: number;
     date: string;
     shared: boolean;
+    tags?: string[];
+    mood?: Mood;
   },
   file?: File
 ) {
@@ -127,6 +115,8 @@ export async function UpdatePhoto(
     longitude: update.lng,
     date: update.date,
     shared: update.shared,
+    tags: update.tags ?? [],
+    mood: update.mood ?? null,
   };
 
   if (file) {
@@ -166,27 +156,33 @@ export async function GetPhotos() {
   const {
     data: { session },
   } = await supabase.auth.getSession();
+
+  // 비로그인 상태: 공개 사진만 조회
   if (!session) {
     const { data, error } = await supabase
       .from("photo")
       .select("*")
-      .eq("shared", true);
-    if (error) {
-      console.error("Error fetching photos:", error);
-      return null;
-    }
-    return data;
-  } else {
-    const { data, error } = await supabase
-      .from("photo")
-      .select("*")
-      .or(`shared.eq.true,uuid.eq.${session?.user.id}`);
+      .eq("shared", true)
+      .order("date", { ascending: false });
     if (error) {
       console.error("Error fetching photos:", error);
       return null;
     }
     return data;
   }
+
+  // 로그인 상태: 내 사진만 조회
+  const { data, error } = await supabase
+    .from("photo")
+    .select("*")
+    .eq("uuid", session.user.id)
+    .order("date", { ascending: false });
+
+  if (error) {
+    console.error("Error fetching photos:", error);
+    return null;
+  }
+  return data;
 }
 
 export async function DeletePhotos(photoId: number, photoUrl: string) {

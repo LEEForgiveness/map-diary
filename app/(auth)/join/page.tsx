@@ -1,17 +1,17 @@
 "use client";
 
 import { registerUser } from "@/app/api/auth";
-import HeaderIcon from "@/app/images/HeaderIcon";
 import React, { Suspense, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import supabase from "@/app/utils/supabaseConfig";
 import { useMessageOverlay } from "@/app/hooks/useMessageOverlay";
 
 export default function page() {
   const router = useRouter();
   const { showMessage, overlay } = useMessageOverlay();
+
   useEffect(() => {
-    // 세션 확인
     const checkSession = async () => {
       const {
         data: { session },
@@ -61,7 +61,6 @@ export default function page() {
       } else if (error.message?.includes("Email address")) {
         message = `회원가입에 실패했습니다: 다른 이메일 주소를 사용해 주세요.`;
       }
-
       showMessage(message);
       return;
     }
@@ -71,119 +70,261 @@ export default function page() {
       return;
     }
     showMessage(
-      "가입 확인 메일을 보냈습니다.만약 이미 가입된 이메일이라면 인증 메일이 발송되지 않습니다. 로그인을 시도해 보세요.",
+      "가입 확인 메일을 보냈습니다. 만약 이미 가입된 이메일이라면 인증 메일이 발송되지 않습니다. 로그인을 시도해 보세요.",
       () => router.push("/login")
     );
-    return;
   };
 
   return (
-    <div className="min-h-screen px-4 sm:px-8 md:px-40 flex flex-1 justify-center py-5 bg-white">
-      <div className="layout-content-container flex flex-col w-full max-w-[480px] py-5 flex-1 justify-center items-center">
-        <div className="flex justify-center items-center gap-2 text-[#111418] mb-5">
-          <div className="size-8">
-            <HeaderIcon />
+    <Suspense>
+      <>
+        {/* 배경 */}
+        <div
+          className="min-h-screen flex items-center justify-center px-4 py-10"
+          style={{ background: "var(--color-cream)" }}
+        >
+          {/* 배경 장식 원 */}
+          <div
+            className="pointer-events-none fixed inset-0 overflow-hidden"
+            aria-hidden
+          >
+            <div
+              className="absolute -top-32 -right-32 w-96 h-96 rounded-full opacity-25"
+              style={{ background: "var(--color-sky-light)" }}
+            />
+            <div
+              className="absolute -bottom-24 -left-24 w-80 h-80 rounded-full opacity-20"
+              style={{ background: "var(--color-coral-light)" }}
+            />
+            <div
+              className="absolute top-1/3 right-1/4 w-64 h-64 rounded-full opacity-10"
+              style={{ background: "var(--color-sand)" }}
+            />
           </div>
-          <h2 className="text-[#111418] tracking-light text-2xl sm:text-[28px] font-bold leading-tight px-4 text-center pb-3 pt-5">
-            Map-Diary 회원가입
-          </h2>
-        </div>
-        <form onSubmit={handleSubmit} className="w-full">
-          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
-            <label className="flex flex-col min-w-40 flex-1">
-              <p className="text-[#111418] text-base font-medium leading-normal pb-2">
-                이름
+
+          {/* 카드 */}
+          <div className="glass-panel animate-fade-in-up w-full max-w-md rounded-3xl px-8 py-10 relative z-10">
+            {/* 헤더 */}
+            <div className="flex flex-col items-center mb-8">
+              <div
+                className="w-14 h-14 rounded-2xl flex items-center justify-center mb-4 shadow-md"
+                style={{ background: "var(--color-coral)" }}
+              >
+                <svg
+                  width="28"
+                  height="28"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                >
+                  <path
+                    d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z"
+                    fill="white"
+                  />
+                </svg>
+              </div>
+              <Link href="/" className="group">
+                <h1
+                  className="text-2xl font-bold tracking-tight group-hover:opacity-75 transition-opacity"
+                  style={{ color: "var(--color-deep-navy)" }}
+                >
+                  Map Diary
+                </h1>
+              </Link>
+              <p
+                className="text-sm mt-1"
+                style={{ color: "var(--color-warm-gray)" }}
+              >
+                나만의 추억 지도를 시작해보세요
               </p>
-              <input
-                placeholder="이름을 입력하세요"
-                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border border-[#dce0e5] bg-white focus:border-[#dce0e5] h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal"
-                value={formData.name}
-                onChange={handleChange}
-                name="name"
-              />
-            </label>
-          </div>
-          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
-            <label className="flex flex-col min-w-40 flex-1">
-              <p className="text-[#111418] text-base font-medium leading-normal pb-2">
-                이메일
-              </p>
-              <input
-                placeholder="you@example.com"
-                className="form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border border-[#dce0e5] bg-white focus:border-[#dce0e5] h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal"
-                value={formData.email}
-                onChange={handleChange}
-                name="email"
-              />
-            </label>
-          </div>
-          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
-            <label className="flex flex-col min-w-40 flex-1">
-              <p className="text-[#111418] text-base font-medium leading-normal pb-2">
-                비밀번호
-              </p>
-              <input
-                placeholder="비밀번호를 입력하세요"
-                type="password"
-                className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border bg-white h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal ${
-                  formData.password.length > 0 && !isPasswordValid
-                    ? "border-red-500 focus:border-red-500"
-                    : "border-[#dce0e5] focus:border-[#dce0e5]"
-                }`}
-                value={formData.password}
-                onChange={handleChange}
-                name="password"
-              />
-              {formData.password.length > 0 && !isPasswordValid && (
-                <p className="text-sm text-red-500 mt-2">
-                  비밀번호는 8자 이상이며 영어 대/소문자와 숫자를 포함해야
-                  합니다.
-                </p>
-              )}
-            </label>
-          </div>
-          <div className="flex w-full flex-wrap items-end gap-4 px-4 py-3">
-            <label className="flex flex-col min-w-40 flex-1">
-              <p className="text-[#111418] text-base font-medium leading-normal pb-2">
-                비밀번호 확인
-              </p>
-              <input
-                placeholder="비밀번호를 입력하세요"
-                type="password"
-                className={`form-input flex w-full min-w-0 flex-1 resize-none overflow-hidden rounded-xl text-[#111418] focus:outline-0 focus:ring-0 border bg-white h-14 placeholder:text-[#637588] p-[15px] text-base font-normal leading-normal ${
-                  showPasswordError
-                    ? "border-red-500 focus:border-red-500"
-                    : "border-[#dce0e5] focus:border-[#dce0e5]"
-                }`}
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                name="confirmPassword"
-              />
-              {showPasswordError && (
-                <p className="text-sm text-red-500 mt-2">
-                  비밀번호와 비밀번호 확인이 일치하지 않습니다.
-                </p>
-              )}
-            </label>
-          </div>
-          <div className="flex flex-col items-start w-full px-4 py-3">
-            <div className="flex flex-1 gap-3 flex-wrap py-3 justify-start w-full">
+            </div>
+
+            {/* 폼 */}
+            <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+              {/* 이름 */}
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--color-navy)" }}
+                >
+                  이름
+                </label>
+                <input
+                  placeholder="이름을 입력하세요"
+                  name="name"
+                  autoComplete="name"
+                  className="w-full rounded-xl h-12 px-4 text-sm outline-none transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    border: "1px solid var(--color-sand)",
+                    color: "var(--color-deep-navy)",
+                  }}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-coral)")
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-sand)")
+                  }
+                  value={formData.name}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* 이메일 */}
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--color-navy)" }}
+                >
+                  이메일
+                </label>
+                <input
+                  placeholder="you@example.com"
+                  name="email"
+                  type="email"
+                  autoComplete="email"
+                  className="w-full rounded-xl h-12 px-4 text-sm outline-none transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    border: "1px solid var(--color-sand)",
+                    color: "var(--color-deep-navy)",
+                  }}
+                  onFocus={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-coral)")
+                  }
+                  onBlur={(e) =>
+                    (e.currentTarget.style.border =
+                      "1px solid var(--color-sand)")
+                  }
+                  value={formData.email}
+                  onChange={handleChange}
+                />
+              </div>
+
+              {/* 비밀번호 */}
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--color-navy)" }}
+                >
+                  비밀번호
+                </label>
+                <input
+                  placeholder="영문+숫자 포함 8자 이상"
+                  type="password"
+                  name="password"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl h-12 px-4 text-sm outline-none transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    border:
+                      formData.password.length > 0 && !isPasswordValid
+                        ? "1px solid #e85b5b"
+                        : "1px solid var(--color-sand)",
+                    color: "var(--color-deep-navy)",
+                  }}
+                  onFocus={(e) => {
+                    if (!(formData.password.length > 0 && !isPasswordValid)) {
+                      e.currentTarget.style.border =
+                        "1px solid var(--color-coral)";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (!(formData.password.length > 0 && !isPasswordValid)) {
+                      e.currentTarget.style.border =
+                        "1px solid var(--color-sand)";
+                    }
+                  }}
+                  value={formData.password}
+                  onChange={handleChange}
+                />
+                {formData.password.length > 0 && !isPasswordValid && (
+                  <p className="text-xs mt-1" style={{ color: "#e85b5b" }}>
+                    비밀번호는 8자 이상이며 영어와 숫자를 포함해야 합니다.
+                  </p>
+                )}
+              </div>
+
+              {/* 비밀번호 확인 */}
+              <div className="flex flex-col gap-1">
+                <label
+                  className="text-sm font-medium"
+                  style={{ color: "var(--color-navy)" }}
+                >
+                  비밀번호 확인
+                </label>
+                <input
+                  placeholder="비밀번호를 다시 입력하세요"
+                  type="password"
+                  name="confirmPassword"
+                  autoComplete="new-password"
+                  className="w-full rounded-xl h-12 px-4 text-sm outline-none transition-all"
+                  style={{
+                    background: "rgba(255,255,255,0.7)",
+                    border: showPasswordError
+                      ? "1px solid #e85b5b"
+                      : "1px solid var(--color-sand)",
+                    color: "var(--color-deep-navy)",
+                  }}
+                  onFocus={(e) => {
+                    if (!showPasswordError) {
+                      e.currentTarget.style.border =
+                        "1px solid var(--color-coral)";
+                    }
+                  }}
+                  onBlur={(e) => {
+                    if (!showPasswordError) {
+                      e.currentTarget.style.border =
+                        "1px solid var(--color-sand)";
+                    }
+                  }}
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                />
+                {showPasswordError && (
+                  <p className="text-xs mt-1" style={{ color: "#e85b5b" }}>
+                    비밀번호가 일치하지 않습니다.
+                  </p>
+                )}
+              </div>
+
+              {/* 가입 버튼 */}
               <button
                 type="submit"
                 disabled={!canSubmit}
-                className={`flex w-full items-center justify-center overflow-hidden rounded-xl h-12 px-5 text-base font-bold leading-normal tracking-[0.015em] ${
-                  canSubmit
-                    ? "cursor-pointer bg-[#1980e6] text-white"
-                    : "cursor-not-allowed bg-gray-300 text-gray-500"
-                }`}
+                className="w-full h-12 rounded-xl text-sm font-bold text-white mt-2 transition-all active:scale-95"
+                style={{
+                  background: canSubmit
+                    ? "var(--color-coral)"
+                    : "var(--color-sand)",
+                  color: canSubmit ? "white" : "var(--color-warm-gray)",
+                  cursor: canSubmit ? "pointer" : "not-allowed",
+                }}
               >
-                <span className="truncate">가입하기</span>
+                가입하기
               </button>
+            </form>
+
+            {/* 하단 링크 */}
+            <div className="flex items-center justify-center gap-2 mt-6 text-sm">
+              <span style={{ color: "var(--color-warm-gray)" }}>
+                이미 계정이 있으신가요?
+              </span>
+              <Link
+                href="/login"
+                className="font-semibold hover:underline"
+                style={{ color: "var(--color-coral)" }}
+              >
+                로그인
+              </Link>
             </div>
           </div>
-        </form>
-      </div>
-      {overlay}
-    </div>
+        </div>
+        {overlay}
+      </>
+    </Suspense>
   );
 }
